@@ -19,18 +19,17 @@ double NTSC_Frequency = 315.0/88.0;   //3.579545455 MHz
 #define CHANNEL_3  61.25 //Channel 3 works out perfectly.
 #define CHANNEL_4  67.272727273
 #define CHANNEL_5  77.25
+#define CW_20M     14.060 // QRP CW 20m band
 
 //To find precise frequency divisors... (1408/80)×67.25(nominal frequency) = 1183.6 ... round up.... 1184/(1408/80) = 67.272727273
 
-double MODULATION_Frequency = CHANNEL_3;
+double MODULATION_Frequency = CW_20M;
 
 
 double BIT_Frequency = 80.0;
 int samples = 1408;//1408;//+2; //+2 if you want to see   WARNING: This MUST be divisible by 32!
 int overshoot = (32*7); //bits of overshoot (continue the table past the end so we don't have to keep checking to make sure it's ok)
 
-// I tried initially without this, but it causes an extra reflection around the main carrier.  Turns out it's cleaner just to modulate directly to the carrier+chroma frequency.  This flag enables that.
-#define DIRECT_CHROMA_CARRIER_SYNTHESIS
 
 
 //ChromaValue, LumaValue = 0...??? 
@@ -52,13 +51,10 @@ void WriteSignal( double LumaValue, double ChromaValue, double Boundary, double 
 	for( i = 0; i < samples+overshoot; i++ )
 	{
 		double ModV = sin( ( MODULATION_Frequency * t ) * PI2 / 1000.0 + eps );
-#ifdef DIRECT_CHROMA_CARRIER_SYNTHESIS
-		double ChromaNV = sin( ((NTSC_Frequency+MODULATION_Frequency) * t ) * PI2 / 1000.0 + eps  + ChromaShift * PI2  );
-		double Signal = ModV * LumaValue + ChromaNV * ChromaValue + Boundary;
-#else
-		double ChromaV = sin( (NTSC_Frequency * t ) * PI2 / 1000.0 + eps  + ChromaShift * PI2  );
-		double Signal = ModV * (ChromaV*(ChromaValue)+LumaValue) + Boundary;
-#endif
+		// modulate directly to the carrier+chroma frequency. 
+		//double ChromaNV = sin( ((NTSC_Frequency+MODULATION_Frequency) * t ) * PI2 / 1000.0 + eps  + ChromaShift * PI2  );
+		//double Signal = ModV * LumaValue + ChromaNV * ChromaValue + Boundary;
+		double Signal = ModV;
 
 		if( Signal > 0 )
 			raw_output[byteplace] |= (1<<(31-bitplace)) & mask;

@@ -20,7 +20,7 @@ var last_custom_program_data;
 var last_custom_program_color;
 //Utility functions for the inner scripts:
 
-var DefaultCode = "autoset = 0;\ncolor = 5;\nvar freq1 = 61.25;\nvar power1 = 1.0;\nvar phase = 0.1;\nvar freq2 = freq1 + 315.0/88.0;\nvar power2 = 1.0;\nfor( var i = 0; i < nrsamps; i++ ) {\n  \
+var DefaultCode = "autoset = 0;\ncolor = 5;\nvar freq1 = 14.06;\nvar power1 = 1.0;\nvar phase = 0.1;\nvar freq2 = freq1 + 315.0/88.0;\nvar power2 = 1.0;\nfor( var i = 0; i < nrsamps; i++ ) {\n  \
 var ev = Math.sin(i*6.283185 * freq1 / spsout )*power1;\n  \
 ev += Math.sin(i*6.283185 * freq2 / spsout + phase*6.283185 )*power2;\n  \
 sampout[i] = ev;\n  \

@@ -117,92 +117,13 @@ LOCAL void fillwith( uint16_t qty, uint8_t color )
 LOCAL void FT_STA()
 {
 	pixline = 0; //Reset the framebuffer out line count (can be done multiple times)
-
-	fillwith( 6, SYNC_LEVEL );
-	fillwith( 73, BLACK_LEVEL );
-	fillwith( 6, SYNC_LEVEL );
-	fillwith( LINE32LEN - (6+73+6), BLACK_LEVEL );
+	fillwith( LINE32LEN, BLACK_LEVEL );
 }
 
 
 LOCAL void FT_STB()
 {
-	fillwith( 68, SYNC_LEVEL );
-	fillwith( 11, BLACK_LEVEL );
-	fillwith( 68, SYNC_LEVEL );
-	fillwith( LINE32LEN - (68+11+68), BLACK_LEVEL );
-}
-
-LOCAL void FT_B()
-{
-	fillwith( 12, SYNC_LEVEL );
-	fillwith( 2, BLACK_LEVEL );
-	fillwith( 4, COLORBURST_LEVEL );
-	fillwith( LINE32LEN-12-6, BLACK_LEVEL );
-}
-
-LOCAL void FT_SRA()
-{
-	fillwith( 6, SYNC_LEVEL );
-	fillwith( 73, BLACK_LEVEL );
-	fillwith( 68, SYNC_LEVEL );
-	fillwith( LINE32LEN - (6+73+68), BLACK_LEVEL );
-}
-
-LOCAL void FT_SRB()
-{
-	fillwith( 68, SYNC_LEVEL );
-	fillwith( 11, BLACK_LEVEL );
-	fillwith( 6, SYNC_LEVEL );
-	fillwith( LINE32LEN - (6+11+68), BLACK_LEVEL );
-}
-
-LOCAL void FT_LIN()
-{
-	//TODO: Make this do something useful.
-	fillwith( 12, SYNC_LEVEL );
-	fillwith( 1, BLACK_LEVEL );
-	fillwith( 7, COLORBURST_LEVEL );
-	fillwith( 11, BLACK_LEVEL );
-#define HDR_SPD (12+1+7+11)
-
-	int fframe = gframe & 1;
-//#define FILLTEST
-#ifdef FILLTEST
-
-	fillwith( FBW/32, BLACK_LEVEL );
-	fillwith( FBW/32, 1 );
-	fillwith( FBW/32, 2 );
-	fillwith( FBW/32, 3 );
-	fillwith( FBW/32, 4 );
-	fillwith( FBW/32, 5 );
-	fillwith( FBW/32, 6 );
-	fillwith( FBW/32, 0 );
-	fillwith( FBW/32, 0 );
-	fillwith( FBW/32, 0 );
-	fillwith( FBW/32, 0 );
-	fillwith( FBW/32, 0 );
-	fillwith( FBW/8, BLACK_LEVEL );
-	fillwith( LINE32LEN - (HDR_SPD+FBW/2), BLACK_LEVEL );
-
-#else
-	uint16_t * fbs = (uint16_t*)(&framebuffer[ ( (pixline * (FBW2/2)) + ( ((FBW2/2)*(FBH))*(fframe)) ) / 2 ]);
-
-	for( linescratch = 0; linescratch < FBW2/4; linescratch++ )
-	{
-		uint16_t fbb;
-		fbb = fbs[linescratch];
-		*(curdma++) = tablept[(fbb>>0)&15];		tablept += PREMOD_SIZE;
-		*(curdma++) = tablept[(fbb>>4)&15];		tablept += PREMOD_SIZE;
-		*(curdma++) = tablept[(fbb>>8)&15];		tablept += PREMOD_SIZE;
-		*(curdma++) = tablept[(fbb>>12)&15];	tablept += PREMOD_SIZE;
-		if( tablept >= tableend ) tablept = tablept - tableend + tablestart;
-	}
-
-	fillwith( LINE32LEN - (HDR_SPD+FBW2), BLACK_LEVEL );
-#endif
-
-	pixline++;
+	fillwith( LINE32LEN, BLACK_LEVEL );
 }
 
 static uint32_t systimex = 0;
@@ -210,10 +131,7 @@ static uint32_t systimein = 0;
 uint32_t last_internal_frametime;
 LOCAL void FT_CLOSE_M()
 {
-	fillwith( 12, SYNC_LEVEL );
-	fillwith( 2, BLACK_LEVEL );
-	fillwith( 4, COLORBURST_LEVEL );
-	fillwith( LINE32LEN-12-6, BLACK_LEVEL );
+	fillwith( LINE32LEN, BLACK_LEVEL );
 	gline = -1;
 	gframe++;
 
@@ -224,7 +142,7 @@ LOCAL void FT_CLOSE_M()
 
 #include "../tablemaker/CbTable.h" 
 
-void (*CbTable[FT_MAX_d])() = { FT_STA, FT_STB, FT_B, FT_SRA, FT_SRB, FT_LIN, FT_CLOSE_M };
+void (*CbTable[FT_MAX_d])() = { FT_STA, FT_STB, FT_STB, FT_STB, FT_STB, FT_STB, FT_CLOSE_M };
 
 LOCAL void slc_isr(void) {
 	//portBASE_TYPE HPTaskAwoken=0;
