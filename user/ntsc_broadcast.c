@@ -59,8 +59,6 @@ Extra copyright info:
 
 #define LINETYPES 6
 
-int8_t jam_color = -1; 
-
 //WS_I2S_DIV - if 1 will actually be 2.  Can't be less than 2.
 
 //		CLK_I2S = 160MHz / I2S_CLKM_DIV_NUM
@@ -91,8 +89,6 @@ const uint32_t * tablept = &premodulated_table[0];
 const uint32_t * tableend = &premodulated_table[PREMOD_ENTRIES*PREMOD_SIZE];
 uint32_t * curdma;
 
-uint8_t pixline; //line number currently being written out.
-
 //Each "qty" is 32 bits, or .4us
 LOCAL void fillwith( uint16_t qty, uint8_t color )
 {
@@ -103,6 +99,15 @@ LOCAL void fillwith( uint16_t qty, uint8_t color )
 		*(curdma++) = tablept[color]; tablept += PREMOD_SIZE;
 	}
 	qty>>=1;
+	if (color == 0) {
+		for( linescratch = 0; linescratch < qty; linescratch++ )
+		{
+			*(curdma++) = 0; tablept += PREMOD_SIZE;
+			*(curdma++) = 0; tablept += PREMOD_SIZE;
+			if( tablept >= tableend ) tablept = tablept - tableend + tablestart;
+		}
+		return;
+	} // else
 	for( linescratch = 0; linescratch < qty; linescratch++ )
 	{
 		*(curdma++) = tablept[color]; tablept += PREMOD_SIZE;
@@ -114,38 +119,23 @@ LOCAL void fillwith( uint16_t qty, uint8_t color )
 
 //XXX TODO: Revisit the length of time the system is at SYNC, BLACK, etc.
 
-LOCAL void FT_STA()
-{
-	pixline = 0; //Reset the framebuffer out line count (can be done multiple times)
-	fillwith( LINE32LEN, BLACK_LEVEL );
-}
-
-
-LOCAL void FT_STB()
-{
-	fillwith( LINE32LEN, BLACK_LEVEL );
-}
 
 static uint32_t systimex = 0;
 static uint32_t systimein = 0;
 uint32_t last_internal_frametime;
-LOCAL void FT_CLOSE_M()
-{
-	fillwith( LINE32LEN, BLACK_LEVEL );
-	gline = -1;
-	gframe++;
-
-	last_internal_frametime = systimex;
-	systimex = 0;
-	systimein = system_get_time();
-}
+static int mod = 0;
 
 #include "../tablemaker/CbTable.h" 
 
-void (*CbTable[FT_MAX_d])() = { FT_STA, FT_STB, FT_STB, FT_STB, FT_STB, FT_STB, FT_CLOSE_M };
-
 LOCAL void slc_isr(void) {
+	uint32 delta = systimein;
 	//portBASE_TYPE HPTaskAwoken=0;
+	systimex = system_get_rtc_time();
+        delta = systimex - systimein;
+	if (delta > 160000) {
+		mod = !mod;
+		systimein = systimex;
+	}
 	struct sdio_queue *finishedDesc;
 	uint32 slc_intr_status;
 	int x;
@@ -158,26 +148,7 @@ LOCAL void slc_isr(void) {
 		//The DMA subsystem is done with this block: Push it on the queue so it can be re-used.
 		finishedDesc=(struct sdio_queue*)READ_PERI_REG(SLC_RX_EOF_DES_ADDR);
 		curdma = (uint32_t*)finishedDesc->buf_ptr;
-
-		//Allow signal jamming, useful for testing output.
-		if( jam_color < 0 )
-		{
-			//*startdma = premodulated_table[0];
-			int lk = 0;
-			if( gline & 1 )
-				lk = (CbLookup[gline>>1]>>4)&0x0f;
-			else
-				lk = CbLookup[gline>>1]&0x0f;
-	
-			systimein = system_get_time();
-			CbTable[lk]();
-			systimex += system_get_time() - systimein;
-			gline++;
-		}
-		else
-		{
-			fillwith( LINE32LEN, jam_color );
-		}
+		fillwith( LINE32LEN, mod);
 	}
 }
 
@@ -185,7 +156,6 @@ LOCAL void slc_isr(void) {
 void ICACHE_FLASH_ATTR testi2s_init() {
 	int x = 0, y;
 
-	jam_color = -1;
 /*	
 	uint32_t endiantest[1] = { 0xAABBCCDD };
 	uint8_t * et = (uint8_t*)endiantest;

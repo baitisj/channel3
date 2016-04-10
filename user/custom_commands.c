@@ -7,7 +7,6 @@
 
 extern uint8_t showstate;
 extern uint8_t showallowadvance;
-extern int8_t jam_color;
 
 void ICACHE_FLASH_ATTR ReinitSettings()
 {
@@ -40,7 +39,6 @@ int ICACHE_FLASH_ATTR CustomCommand(char * buffer, int retsize, char *pusrdata, 
 		rh = fromhex1( *(bp++) );
 		showallowadvance = (rh << 4) | fromhex1( *(bp++) );
 		rh = fromhex1( *(bp++) );
-		jam_color = (rh << 4) | fromhex1( *(bp++) );
 		break;
 	}
 

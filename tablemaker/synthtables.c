@@ -47,6 +47,7 @@ void WriteSignal( double LumaValue, double ChromaValue, double Boundary, double 
 	int i;
 	int bitplace = 0;
 	int byteplace = 0;
+	double amplitude = .05;
 
 	for( i = 0; i < samples+overshoot; i++ )
 	{
@@ -54,7 +55,7 @@ void WriteSignal( double LumaValue, double ChromaValue, double Boundary, double 
 		// modulate directly to the carrier+chroma frequency. 
 		//double ChromaNV = sin( ((NTSC_Frequency+MODULATION_Frequency) * t ) * PI2 / 1000.0 + eps  + ChromaShift * PI2  );
 		//double Signal = ModV * LumaValue + ChromaNV * ChromaValue + Boundary;
-		double Signal = ModV;
+		double Signal = ModV * amplitude;
 
 		if( Signal > 0 )
 			raw_output[byteplace] |= (1<<(31-bitplace)) & mask;
