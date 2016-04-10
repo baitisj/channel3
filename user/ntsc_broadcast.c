@@ -120,25 +120,58 @@ LOCAL void fillwith( uint16_t qty, uint8_t color )
 //XXX TODO: Revisit the length of time the system is at SYNC, BLACK, etc.
 
 
-static uint32_t systimex = 0;
-static uint32_t systimein = 0;
-uint32_t last_internal_frametime;
+static uint32_t futureEvent = 0;
+static uint32_t curTime = 0;
 static int mod = 0;
+//                       D   E/S   W   L    W   7    /T E S   T/T E S   T/T E S   T/H    E L    L    O  /D   E/S   W   L    W   7    /T E S   T/C    O   M  P    L    E T E/<BT> /R   S   T ?     /R   S   T ?     /R   S   T ?     /K   .
+static char* message = "/-.. ./... .-- .-.. .-- --.../- . ... -/- . ... -/- . ... -/.... . .-.. .-.. ---/-.. ./... .-- .-.. .-- --.../- . ... -/-.-. --- -- .--. .-.. . - ./-...-/.-. ... - ..--../.-. ... - ..--../.-. ... - ..--../-.- .-.-.- ///////////////////////////////////////////";
+static char* mp;
 
 #include "../tablemaker/CbTable.h" 
 
 LOCAL void slc_isr(void) {
-	uint32 delta = systimein;
-	//portBASE_TYPE HPTaskAwoken=0;
-	systimex = system_get_rtc_time();
-        delta = systimex - systimein;
-	if (delta > 160000) {
-		mod = !mod;
-		systimein = systimex;
-	}
+        int onesec = 160000;
+        int dottime = onesec / 20;
+	int safety = onesec / 40;
+	int margin = safety + dottime;
+	int delta = 0;
+	curTime = system_get_rtc_time();
+	delta = futureEvent - curTime;
+
 	struct sdio_queue *finishedDesc;
 	uint32 slc_intr_status;
 	int x;
+
+	mod = 0;
+	if (delta <= margin) {
+		if (delta <= safety) {
+			++mp;
+			int incr_time = curTime + margin;
+			mod = 1;
+			// Handle transition.
+			if (*mp == '\0') {
+				mp = message;
+			}
+			if (*mp == '.') {
+				futureEvent = incr_time + dottime;
+			}
+			if (*mp == '-') {
+				futureEvent = incr_time + 3 * dottime;
+			}
+			if (*mp == ' ') {
+				futureEvent = incr_time + 2 * dottime;
+				mod = 0;
+			}
+			if (*mp == '/') {
+				futureEvent = incr_time + 6 * dottime;
+				mod = 0;
+			}
+		}
+	} else { 
+		if ((*mp == '.') || (*mp == '-')) { 
+			mod = 1;
+		}
+	}
 
 	slc_intr_status = READ_PERI_REG(SLC_INT_STATUS);
 	//clear all intr flags
@@ -154,6 +187,9 @@ LOCAL void slc_isr(void) {
 
 //Initialize I2S subsystem for DMA circular buffer use
 void ICACHE_FLASH_ATTR testi2s_init() {
+	futureEvent = system_get_rtc_time() + 1;
+	mod = 0;
+        mp = message;
 	int x = 0, y;
 
 /*	
